@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Attempt to fix watch history and watch progress
+- Channel sort
 
 ## [0.44.6] - 2026-02-08
 
