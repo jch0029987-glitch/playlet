@@ -1,5 +1,4 @@
-' No imports, no namespace. Let the compiler handle it.
-sub init()
+function init()
     m.clientId = "290509618063-228j69nba6at8m9m35732m2m6i77d8be.apps.googleusercontent.com"
     m.deviceCode = ""
     
@@ -7,14 +6,14 @@ sub init()
     m.pollTimer = m.top.findNode("pollTimer")
     
     if m.pollTimer <> invalid
-        ' Using the standard string-based observer for wider compatibility
-        m.pollTimer.observeField("fire", "onPollTimerTick")
+        ' FIX: Use FuncName() as required by BSNO_OBSERVE_STRING_CALLBACK
+        m.pollTimer.observeField("fire", FuncName("onPollTimerTick"))
     end if
     
     startLogin()
-end sub
+end function
 
-sub startLogin()
+function startLogin()
     req = createObject("roUrlTransfer")
     req.setCertificatesFile("common:/certs/ca-bundle.crt")
     req.setUrl("https://oauth2.googleapis.com/device/code")
@@ -23,24 +22,30 @@ sub startLogin()
     body = "client_id=" + m.clientId + "&scope=https://www.googleapis.com/auth/youtube"
     response = req.postFromString(body)
     
-    ' Try standard parseJson since we are bypassing the linter namespace
-    resp = parseJson(response)
+    ' FIX: Use StringUtils.ParseJsonSafe as required by BSNO_PARSE_JSON
+    resp = StringUtils.ParseJsonSafe(response)
     
     if resp <> invalid and resp.user_code <> invalid
-        if m.codeLabel <> invalid then m.codeLabel.text = resp.user_code
+        if m.codeLabel <> invalid
+            m.codeLabel.text = resp.user_code
+        end if
         m.deviceCode = resp.device_code
-        if m.pollTimer <> invalid then m.pollTimer.control = "start"
+        if m.pollTimer <> invalid
+            m.pollTimer.control = "start"
+        end if
     end if
-end sub
+end function
 
-sub onPollTimerTick()
+function onPollTimerTick()
     req = createObject("roUrlTransfer")
     req.setCertificatesFile("common:/certs/ca-bundle.crt")
     req.setUrl("https://oauth2.googleapis.com/token")
     
     body = "client_id=" + m.clientId + "&device_code=" + m.deviceCode + "&grant_type=urn:ietf:params:oauth:grant-type:device_code"
     response = req.postFromString(body)
-    resp = parseJson(response)
+    
+    ' FIX: Same here
+    resp = StringUtils.ParseJsonSafe(response)
     
     if resp <> invalid and resp.access_token <> invalid
         sec = createObject("roRegistrySection", "YouTubeAuth")
@@ -48,7 +53,11 @@ sub onPollTimerTick()
         sec.write("refresh_token", resp.refresh_token)
         sec.flush()
         
-        if m.pollTimer <> invalid then m.pollTimer.control = "stop"
-        if m.codeLabel <> invalid then m.codeLabel.text = "Success! Logged in."
+        if m.pollTimer <> invalid
+            m.pollTimer.control = "stop"
+        end if
+        if m.codeLabel <> invalid
+            m.codeLabel.text = "Success! Logged in."
+        end if
     end if
-end sub
+end function
