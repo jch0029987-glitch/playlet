@@ -1,20 +1,34 @@
+import "pkg:/source/components/BaseComponent.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
 namespace Playlet.Components.Account
-    ' Use the direct name now that it is imported
-    class YouTubeLogin extends BaseComponent
+    class YouTubeLogin extends Playlet.Components.BaseComponent
         
-        private authService as Playlet.Services.YouTubeAuthService
+        ' Hardcode the Auth Logic here since the service file got lost
+        private clientId = "290509618063-228j69nba6at8m9m35732m2m6i77d8be.apps.googleusercontent.com"
         private deviceCode as string = ""
 
         protected override function init()
-            ' Use full namespace to help the compiler find your service
-            m.authService = new Playlet.Services.YouTubeAuthService()
-            
-            m.top.findNode("pollTimer").observeField("fire", "onPollTimerTick")
             m.startLogin()
+            
+            pollTimer = m.top.findNode("pollTimer")
+            if pollTimer <> invalid
+                ' Using FuncName() to satisfy the linter
+                pollTimer.observeField("fire", FuncName("onPollTimerTick"))
+            end if
         end function
 
         private function startLogin()
-            resp = m.authService.getDeviceCode()
+            req = createObject("roUrlTransfer")
+            req.setCertificatesFile("common:/certs/ca-bundle.crt")
+            req.setUrl("https://oauth2.googleapis.com/device/code")
+            req.addHeader("Content-Type", "application/x-www-form-urlencoded")
+            
+            body = "client_id=" + m.clientId + "&scope=https://www.googleapis.com/auth/youtube"
+            response = req.postFromString(body)
+            
+            resp = StringUtils.ParseJsonSafe(response)
+            
             if resp <> invalid and resp.user_code <> invalid
                 m.top.findNode("codeLabel").text = resp.user_code
                 m.deviceCode = resp.device_code
@@ -22,8 +36,15 @@ namespace Playlet.Components.Account
             end if
         end function
 
-        private function onPollTimerTick()
-            resp = m.authService.pollForToken(m.deviceCode)
+        public function onPollTimerTick()
+            req = createObject("roUrlTransfer")
+            req.setCertificatesFile("common:/certs/ca-bundle.crt")
+            req.setUrl("https://oauth2.googleapis.com/token")
+            
+            body = "client_id=" + m.clientId + "&device_code=" + m.deviceCode + "&grant_type=urn:ietf:params:oauth:grant-type:device_code"
+            response = req.postFromString(body)
+            resp = StringUtils.ParseJsonSafe(response)
+            
             if resp <> invalid and resp.access_token <> invalid
                 sec = createObject("roRegistrySection", "YouTubeAuth")
                 sec.write("access_token", resp.access_token)
