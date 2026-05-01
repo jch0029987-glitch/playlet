@@ -1,43 +1,40 @@
+' Explicitly import the base class
+import "pkg:/source/components/BaseComponent.bs"
+
 namespace Playlet.Components.Account
-    class YouTubeLogin extends Playlet.Components.BaseComponent
-        
-        @property userCode as string = ""
-        @property verificationUrl as string = ""
+    ' Use the direct name now that it is imported
+    class YouTubeLogin extends BaseComponent
         
         private authService as Playlet.Services.YouTubeAuthService
-        private pollTimer as object
+        private deviceCode as string = ""
 
         protected override function init()
+            ' Use full namespace to help the compiler find your service
             m.authService = new Playlet.Services.YouTubeAuthService()
-            m.startLoginProcess()
+            
+            m.top.findNode("pollTimer").observeField("fire", "onPollTimerTick")
+            m.startLogin()
         end function
 
-        private function startLoginProcess()
-            deviceInfo = m.authService.getDeviceCode()
-            if deviceInfo <> invalid and deviceInfo.user_code <> invalid
-                m.userCode = deviceInfo.user_code
-                m.verificationUrl = deviceInfo.verification_url
-                
-                ' Start polling every 5 seconds
-                m.pollTimer = m.top.findNode("pollTimer")
-                m.pollTimer.control = "start"
+        private function startLogin()
+            resp = m.authService.getDeviceCode()
+            if resp <> invalid and resp.user_code <> invalid
+                m.top.findNode("codeLabel").text = resp.user_code
+                m.deviceCode = resp.device_code
+                m.top.findNode("pollTimer").control = "start"
             end if
         end function
 
-        ' Called by the Timer in the XML
         private function onPollTimerTick()
-            tokenResponse = m.authService.pollForToken(m.deviceCode)
-            
-            if tokenResponse.access_token <> invalid
-                ' Save tokens to the Roku Registry (Persistent)
+            resp = m.authService.pollForToken(m.deviceCode)
+            if resp <> invalid and resp.access_token <> invalid
                 sec = createObject("roRegistrySection", "YouTubeAuth")
-                sec.write("access_token", tokenResponse.access_token)
-                sec.write("refresh_token", tokenResponse.refresh_token)
+                sec.write("access_token", resp.access_token)
+                sec.write("refresh_token", resp.refresh_token)
                 sec.flush()
                 
-                ' Stop polling and close
-                m.pollTimer.control = "stop"
-                print "Login Success!"
+                m.top.findNode("pollTimer").control = "stop"
+                m.top.findNode("codeLabel").text = "Success! Logged in."
             end if
         end function
     end class
