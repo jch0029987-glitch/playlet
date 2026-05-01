@@ -10,7 +10,6 @@ namespace Playlet.Services
             
             body = "client_id=" + m.clientId + "&scope=https://www.googleapis.com/auth/youtube"
             response = req.postFromString(body)
-            ' FIX: Use Playlet's mandatory StringUtils for parsing
             return StringUtils.ParseJsonSafe(response)
         end function
 
@@ -21,7 +20,6 @@ namespace Playlet.Services
             
             body = "client_id=" + m.clientId + "&device_code=" + deviceCode + "&grant_type=urn:ietf:params:oauth:grant-type:device_code"
             response = req.postFromString(body)
-            ' FIX: Use Playlet's mandatory StringUtils for parsing
             return StringUtils.ParseJsonSafe(response)
         end function
     end class
