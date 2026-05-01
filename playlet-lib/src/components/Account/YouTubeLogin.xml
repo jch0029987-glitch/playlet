@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="YouTubeLogin" extends="Group">
+    <children>
+        <Label id="instructionLabel" text="Go to google.com/device" translation="[100, 100]" />
+        <Label id="codeLabel" text="Loading..." translation="[100, 200]" font="font:LargeBoldSystemFont" />
+    </children>
+</component>
