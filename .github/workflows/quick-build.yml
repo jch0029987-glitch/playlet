@@ -1,33 +1,42 @@
-name: Manual Quick Build
+name: Jeremy's Custom Full Build
 
 on:
-  workflow_dispatch: # Allows you to run this manually from the Actions tab
+  push:
+    branches: ["main"]
+  workflow_dispatch: # Allows manual trigger from your phone
 
 jobs:
-  build:
+  build_app:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Playlet Lib
-        run: |
-          cd playlet-lib
-          npm run test:build
+      - name: Build Full Project
+        # This triggers the root build which links the lib and app folders
+        run: npm run build
+        env:
+          # We provide dummy values to prevent the build script from panicking
+          ROKU_DEV_TARGET: 127.0.0.1
+          ROKU_DEVPASSWORD: password
 
-      - name: Upload Zip Artifact
+      - name: Bundle & Upload Finished App
         uses: actions/upload-artifact@v4
         with:
-          name: playlet-lib-custom
-          # This path points to where bsc usually drops the zip
-          path: build/playlet-lib-tests.zip
+          name: playlet-full-package
+          # This catches the app zip and the library zip from the release folder
+          path: |
+            release/*.zip
+            playlet-app/out/*.zip
           if-no-files-found: error
+          retention-days: 7
