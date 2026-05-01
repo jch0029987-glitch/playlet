@@ -1,0 +1,44 @@
+namespace Playlet.Components.Account
+    class YouTubeLogin extends Playlet.Components.BaseComponent
+        
+        @property userCode as string = ""
+        @property verificationUrl as string = ""
+        
+        private authService as Playlet.Services.YouTubeAuthService
+        private pollTimer as object
+
+        protected override function init()
+            m.authService = new Playlet.Services.YouTubeAuthService()
+            m.startLoginProcess()
+        end function
+
+        private function startLoginProcess()
+            deviceInfo = m.authService.getDeviceCode()
+            if deviceInfo <> invalid and deviceInfo.user_code <> invalid
+                m.userCode = deviceInfo.user_code
+                m.verificationUrl = deviceInfo.verification_url
+                
+                ' Start polling every 5 seconds
+                m.pollTimer = m.top.findNode("pollTimer")
+                m.pollTimer.control = "start"
+            end if
+        end function
+
+        ' Called by the Timer in the XML
+        private function onPollTimerTick()
+            tokenResponse = m.authService.pollForToken(m.deviceCode)
+            
+            if tokenResponse.access_token <> invalid
+                ' Save tokens to the Roku Registry (Persistent)
+                sec = createObject("roRegistrySection", "YouTubeAuth")
+                sec.write("access_token", tokenResponse.access_token)
+                sec.write("refresh_token", tokenResponse.refresh_token)
+                sec.flush()
+                
+                ' Stop polling and close
+                m.pollTimer.control = "stop"
+                print "Login Success!"
+            end if
+        end function
+    end class
+end namespace
