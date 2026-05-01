@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<component name="YouTubeLogin" extends="Group">
+<component name="YouTubeLogin" extends="Playlet.Components.BaseComponent">
     <script type="text/brightscript" uri="pkg:/components/Account/YouTubeLogin.bs" />
     <children>
-        <Label id="urlLabel" text="Go to: google.com/device" translation="[100, 100]" />
-        <Label id="codeLabel" text="Loading..." translation="[100, 200]" />
+        <Label id="codeLabel" text="Loading Code..." translation="[100, 200]" />
         <Timer id="pollTimer" repeat="true" duration="5" />
     </children>
 </component>
