@@ -1,26 +1,44 @@
-namespace Playlet.Services
-    class YouTubeAuthService
-        private clientId = "290509618063-228j69nba6at8m9m35732m2m6i77d8be.apps.googleusercontent.com"
+import "pkg:/source/components/BaseComponent.bs"
+import "pkg:/source/services/YouTubeAuthService.bs"
 
-        public function getDeviceCode() as object
-            req = createObject("roUrlTransfer")
-            req.setCertificatesFile("common:/certs/ca-bundle.crt")
-            req.setUrl("https://oauth2.googleapis.com/device/code")
-            req.addHeader("Content-Type", "application/x-www-form-urlencoded")
+namespace Playlet.Components.Account
+    class YouTubeLogin extends Playlet.Components.BaseComponent
+        
+        private authService as Playlet.Services.YouTubeAuthService
+        private deviceCode as string = ""
+
+        protected override function init()
+            m.authService = new Playlet.Services.YouTubeAuthService()
             
-            body = "client_id=" + m.clientId + "&scope=https://www.googleapis.com/auth/youtube"
-            response = req.postFromString(body)
-            return StringUtils.ParseJsonSafe(response)
+            pollTimer = m.top.findNode("pollTimer")
+            if pollTimer <> invalid
+                ' FIX: Using the specific FuncName() syntax required by the linter
+                pollTimer.observeField("fire", FuncName("onPollTimerTick"))
+            end if
+            
+            m.startLogin()
         end function
 
-        public function pollForToken(deviceCode as string) as object
-            req = createObject("roUrlTransfer")
-            req.setCertificatesFile("common:/certs/ca-bundle.crt")
-            req.setUrl("https://oauth2.googleapis.com/token")
-            
-            body = "client_id=" + m.clientId + "&device_code=" + deviceCode + "&grant_type=urn:ietf:params:oauth:grant-type:device_code"
-            response = req.postFromString(body)
-            return StringUtils.ParseJsonSafe(response)
+        private function startLogin()
+            resp = m.authService.getDeviceCode()
+            if resp <> invalid and resp.user_code <> invalid
+                m.top.findNode("codeLabel").text = resp.user_code
+                m.deviceCode = resp.device_code
+                m.top.findNode("pollTimer").control = "start"
+            end if
+        end function
+
+        public function onPollTimerTick()
+            resp = m.authService.pollForToken(m.deviceCode)
+            if resp <> invalid and resp.access_token <> invalid
+                sec = createObject("roRegistrySection", "YouTubeAuth")
+                sec.write("access_token", resp.access_token)
+                sec.write("refresh_token", resp.refresh_token)
+                sec.flush()
+                
+                m.top.findNode("pollTimer").control = "stop"
+                m.top.findNode("codeLabel").text = "Success! Logged in."
+            end if
         end function
     end class
 end namespace
