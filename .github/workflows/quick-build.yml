@@ -3,7 +3,7 @@ name: Jeremy's Custom Full Build
 on:
   push:
     branches: ["main"]
-  workflow_dispatch: # Allows manual trigger from your phone
+  workflow_dispatch:
 
 jobs:
   build_app:
@@ -23,10 +23,9 @@ jobs:
         run: npm ci
 
       - name: Build Full Project
-        # This triggers the root build which links the lib and app folders
-        run: npm run build
+        # 'build:release' is the specific script Playlet uses to bundle everything
+        run: npm run build:release
         env:
-          # We provide dummy values to prevent the build script from panicking
           ROKU_DEV_TARGET: 127.0.0.1
           ROKU_DEVPASSWORD: password
 
@@ -34,9 +33,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playlet-full-package
-          # This catches the app zip and the library zip from the release folder
+          # We check both the release and out folders just to be safe
           path: |
             release/*.zip
             playlet-app/out/*.zip
+            build/*.zip
           if-no-files-found: error
-          retention-days: 7
