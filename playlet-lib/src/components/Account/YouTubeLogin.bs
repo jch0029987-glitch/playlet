@@ -1,5 +1,3 @@
-' Explicitly import the base class
-import "pkg:/source/components/BaseComponent.bs"
 
 namespace Playlet.Components.Account
     ' Use the direct name now that it is imported
