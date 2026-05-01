@@ -1,23 +1,28 @@
 namespace Playlet.Services
     class YouTubeAuthService
-        ' Using the YouTube on TV Client ID (widely used by SmartTube/YouTube.js)
         private clientId = "290509618063-228j69nba6at8m9m35732m2m6i77d8be.apps.googleusercontent.com"
 
         public function getDeviceCode() as object
-            request = createObject("roUrlTransfer")
-            request.setUrl("https://oauth2.googleapis.com/device/code")
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded")
-            ' We request access to YouTube and YouTube secondary data
+            req = createObject("roUrlTransfer")
+            req.setCertificatesFile("common:/certs/ca-bundle.crt")
+            req.setUrl("https://oauth2.googleapis.com/device/code")
+            req.addHeader("Content-Type", "application/x-www-form-urlencoded")
+            
             body = "client_id=" + m.clientId + "&scope=https://www.googleapis.com/auth/youtube"
-            response = request.postFromString(body)
-            return parseJson(response)
+            response = req.postFromString(body)
+            ' FIX: Use Playlet's mandatory StringUtils for parsing
+            return StringUtils.ParseJsonSafe(response)
         end function
 
         public function pollForToken(deviceCode as string) as object
-            request = createObject("roUrlTransfer")
-            request.setUrl("https://oauth2.googleapis.com/token")
+            req = createObject("roUrlTransfer")
+            req.setCertificatesFile("common:/certs/ca-bundle.crt")
+            req.setUrl("https://oauth2.googleapis.com/token")
+            
             body = "client_id=" + m.clientId + "&device_code=" + deviceCode + "&grant_type=urn:ietf:params:oauth:grant-type:device_code"
-            return parseJson(request.postFromString(body))
+            response = req.postFromString(body)
+            ' FIX: Use Playlet's mandatory StringUtils for parsing
+            return StringUtils.ParseJsonSafe(response)
         end function
     end class
 end namespace
