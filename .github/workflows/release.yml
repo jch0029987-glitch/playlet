@@ -6,35 +6,40 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for the git-hash versioning script
 
-      - name: Use Node.js 22.x
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Full App (Bypass Safety Checks)
-        # We go directly into the app folder and run the BrighterScript compiler.
-        # This skips the 'version-sync' and 'git-hash' scripts entirely.
-        run: |
-          cd playlet-app
-          npx bsc --project bsconfig.json --create-package
+      - name: Build Playlet
+        # We run the official build script but pass dummy IP/Passwords 
+        # so the 'roku-deploy' library doesn't crash the process.
+        run: npm run build:release
+        env:
+          ROKU_DEV_TARGET: 127.0.0.1
+          ROKU_DEVPASSWORD: password
+          ROKU_SIGN_PASSWORD: password
+          CI: true
 
-      - name: Upload Build Artifact
+      - name: Archive Production Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: playlet-working-build
-          # bsc usually drops the zip in the 'out' folder or 'build' folder
+          name: playlet-production-zips
+          # The official 'build:release' script outputs to the /release folder
           path: |
-            playlet-app/out/*.zip
-            playlet-app/build/*.zip
-            build/*.zip
+            release/playlet.zip
+            release/playlet-lib.zip
           if-no-files-found: error
